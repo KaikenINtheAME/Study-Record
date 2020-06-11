@@ -65,7 +65,7 @@ class Query(object):
     def getall(self):
         """return all of the records"""
         try:
-            return self.df.index[0], self.df.index[-1]
+            return self.df.index[0].date(), self.df.index[-1].date()
         except IndexError:
             messagebox.showinfo(title='No record', message="log is empty, go on learning!")
         except:
@@ -93,36 +93,39 @@ class Query(object):
             dates = self.df[start:end].index
             hours = self.df.loc[start:end]['hours']
             tension = self.df[start:end]['tension']
-            if len(dates) <= 10:
-                locator = mdates.DayLocator()
-            else:
-                locator = mdates.MonthLocator()
             width = 0.8
+            align = 'center'
+            xticks = pd.date_range(start, end, freq='D')
+            fmt = mdates.DateFormatter('%a,%m-%d')
+            locator = None
         # week view
         elif wv_or_mv == 'wv':
             dates = self.df[start:end].resample('W').sum().index
             hours = self.df[start:end].resample('W').sum()['hours']
             tension = self.df[start:end].resample('W').sum()['tension']
-            locator = mdates.DayLocator()
-            width = 1
+            width = 5.6
+            align = 'center'
+            xticks = pd.date_range(start, end, freq='W')
+            fmt = mdates.DateFormatter('%m-%d')
+            locator =None
         # month view
         elif wv_or_mv == 'mv':
             dates = self.df[start:end].resample('M').sum().index
             hours = self.df[start:end].resample('M').sum()['hours']
             tension = self.df[start:end].resample('M').sum()['tension']
-            locator = mdates.DayLocator()
             width = 1
+            align = 'center'
+            xticks = pd.date_range(start, end, freq='M')
+            fmt = mdates.DateFormatter('%y-%m')
+            locator = mdates.AutoDateLocator()
+
         else:
             raise Exception("ERROR in parameter 'wv_or_mv' ")
-
-        formatter = mdates.DateFormatter('%a,\n%b %d')
 
         fig, ax1 = plt.subplots()
 
         # the Hours axis
-        ax1.xaxis.set_major_locator(locator)
-        ax1.xaxis.set_major_formatter(formatter)
-        ax1.tick_params(axis='x')
+        ax1.tick_params(axis='x',rotation=45, size=3)
         ax1.set_ylabel('Hours')
 
         # the Tension axis
@@ -130,7 +133,7 @@ class Query(object):
         ax2.set_ylabel('Tension')
 
         # Hours graph
-        ax1.bar(dates, hours, facecolor='blue', alpha=0.3, width=width)
+        ax1.bar(dates, hours, facecolor='blue', alpha=0.3, width=width,align=align)
 
         # function for text
         def text_left_top(ax, cmstr='', height=0.92):
@@ -145,8 +148,15 @@ class Query(object):
         # Tension graph
         ax2.plot(dates, tension, 'ko--')
 
+        #xticks
+        plt.xticks(xticks)
+        ax1.xaxis.set_major_formatter(fmt)
+        if locator:
+            ax1.xaxis.set_major_locator(locator)
+
         # title
-        plt.title("Record from {} to {}".format(start, end))
+        plt.title("Record from {} to {}".format(start.isoformat(), end.isoformat()))
+
         plt.show()
         return
 
@@ -170,7 +180,7 @@ class Query(object):
         plt.subplot(211)
         plt.title('Histogram from {} to {}'.format(start, end))
         plt.subplots_adjust(hspace=0.3)
-        plt.hist(hours, align='left', rwidth=200, range=(0, 10))
+        plt.hist(hours, align='left', range=(0, 10))
         plt.xlabel('Hours')
 
         # turn to subplot_2
